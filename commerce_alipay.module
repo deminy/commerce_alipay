@@ -1,0 +1,281 @@
+<?php
+
+/**
+ * @file
+ * Implements Alipay in Drupal Commerce checkout.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_alipay_menu() {
+  $items['commerce_alipay/notify'] = array(
+    'page callback' => 'commerce_alipay_process_notify',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ */
+function commerce_alipay_commerce_payment_method_info() {
+  $payment_methods = array();
+
+  $payment_methods['alipay'] = array(
+    'base' => 'commerce_alipay',
+    'title' => t('Alipay'),
+    'terminal' => FALSE,
+    'offsite' => TRUE,
+    'offsite_autoredirect' => TRUE,
+  );
+
+  return $payment_methods;
+}
+
+/**
+ * Payment method callback: settings form.
+ */
+function commerce_alipay_settings_form($settings = NULL) {
+  $form = array();
+
+  $settings = (array) $settings + array(
+    'service' => 'create_direct_pay_by_user',
+    'seller_email' => '',
+    'partner' => '',
+    'key' => '',
+    'debug' => '',
+  );
+
+  $form['service'] = array(
+    '#type' => 'select',
+    '#title' => t('Service'),
+    '#description' => t('The service type'),
+    '#default_value' => $settings['service'],
+    '#options' => array(
+      'create_direct_pay_by_user' => t('Direct'),
+      'create_partner_trade_by_buyer' => t('Escrow'),
+      'trade_create_by_buyer' => t('DualFun'),
+      'send_goods_confirm_by_platform' => t('SendConfirm'),
+    ),
+    '#required' => TRUE,
+  );
+  $form['seller_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Seller email'),
+    '#description' => t('The seller email'),
+    '#default_value' => $settings['seller_email'],
+    '#required' => TRUE,
+  );
+  $form['partner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Partner id'),
+    '#description' => t('The partner id you use for the Alipay account you want to receive payments.'),
+    '#default_value' => $settings['partner'],
+    '#required' => TRUE,
+  );
+  $form['key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Key'),
+    '#description' => t('The key code'),
+    '#default_value' => $settings['key'],
+    '#required' => TRUE,
+  );
+  $form['debug'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Debug'),
+    '#description' => t('0.01 pay test.'),
+    '#default_value' => $settings['debug'],
+  );
+
+  return $form;
+}
+
+/**
+ * Payment method callback: adds a message to the submission form.
+ */
+function commerce_alipay_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
+  $form['alipay_information'] = array(
+    '#markup' => '<span class="commerce-alipay-info">' . t('(Continue with checkout to complete payment via Alipay.)') . '</span>',
+  );
+
+  return $form;
+}
+
+/**
+ * Payment method callback: redirect form.
+ */
+function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_method) {
+  // Return an error if the enabling action's settings haven't been configured.
+  if (empty($payment_method['settings']['partner'])) {
+    drupal_set_message(t('Alipay is not configured for use. No Partner ID has been specified.'), 'error');
+    return array();
+  }
+  $form          = array();
+  $wrapper       = entity_metadata_wrapper('commerce_order', $order);
+  $currency_code = $wrapper->commerce_order_total->currency_code->value();
+  $amount        = $payment_method['settings']['debug'] ? 1 : $wrapper->commerce_order_total->amount->value();
+
+  // Set feedback URLs
+  $settings = array(
+    // Return to the payment redirect page for processing successful payments
+    'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
+    'notify' => url('commerce_alipay/notify', array('absolute' => TRUE)),
+  );
+  $settings = $payment_method['settings'] + $settings;
+
+  $data = array(
+    'service' => $settings['service'],
+    'payment_type' => '1',
+    'partner' => $settings['partner'],
+    'seller_email' => $settings['seller_email'],
+    'return_url' => $settings['return'],
+    'notify_url' => $settings['notify'],
+    '_input_charset' => 'UTF-8',
+    'show_url' => $settings['return'],
+    'out_trade_no' => $order->order_number,
+    'subject' => t('order !order_id', array('!order_id' => $order->order_number)),
+    'body' => t('order !order_id', array('!order_id' => $order->order_number)),
+    'total_fee' => commerce_currency_amount_to_decimal($amount, 'CNY'),
+    'sign_type' => 'MD5',
+  );
+  $data['sign'] = commerce_alipay_sign($data, $settings['key']);
+  $form['#token'] = FALSE;
+  foreach ($data as $name => $value) {
+    if (!empty($value)) {
+      $value = trim($value);
+      // Add the value as a hidden form element
+      $form[$name] = array('#type' => 'hidden', '#value' => $value);
+    }
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Proceed with payment'),
+    '#submit' => array('commerce_alipay_redirect'),
+  );
+  return $form;
+}
+
+/**
+ * Redirect to alipay.
+ */
+function commerce_alipay_redirect($form, &$form_state) {
+  $url = 'https://www.alipay.com/cooperate/gateway.do?';
+  form_state_values_clean(&$form_state);
+  $data = drupal_http_build_query($form_state['values']);
+  $form_state['redirect'] = $url . $data;
+}
+
+/**
+ * Payment method callback: redirect form return validation.
+ */
+function commerce_alipay_redirect_form_validate($order, $payment_method) {
+  return commerce_alipay_notify_validate($order, $payment_method, $_GET);
+}
+
+/**
+ * Payment method callback: redirect form return submit.
+ */
+function commerce_alipay_redirect_form_submit($order, $payment_method) {
+  return commerce_alipay_notify_submit($order, $payment_method, $_GET);
+}
+
+/**
+  * Alipay notify process
+  */
+function commerce_alipay_process_notify() {
+  if (empty($_POST)) {
+    return FALSE;
+  }
+  $order = commerce_order_load($_POST['out_trade_no']);
+  $payment_method = commerce_payment_method_instance_load($order->data['payment_method']);
+  if (commerce_alipay_notify_validate($order, $payment_method, $_POST)) {
+    commerce_alipay_notify_submit($order, $payment_method, $_POST);
+  }
+}
+
+/**
+  * Alipay notify validate
+  */
+function commerce_alipay_notify_validate($order, $payment_method, $notify) {
+  if (empty($notify)) {
+    return FALSE;
+  }
+  variable_set('commerce_alipay_notity_' . $notify["notify_id"], $notify);
+  watchdog('commerce_alipay', 'Customer returned from Alipay with the following data:<pre>' . check_plain(print_r($notify, TRUE)) . '</pre>', array(), WATCHDOG_NOTICE);
+  $sign             = commerce_alipay_sign($notify, $payment_method['settings']['key']);
+  $https_verify_url = 'https://www.alipay.com/cooperate/gateway.do?service=notify_verify&partner=' . $payment_method['settings']['partner'] . '&notify_id=';
+  $result           = drupal_http_request($https_verify_url . $notify["notify_id"]);
+  if ($result->data == 'true' && $sign == $notify['sign']) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+  * Alipay notify submit
+  */
+function commerce_alipay_notify_submit($order, $payment_method, $notify) {
+  // If this is a prior authorization capture IPN for which we've already
+  // created a transaction...
+  $transactions = commerce_payment_transaction_load_multiple(array(), array('remote_id' => $notify["trade_no"]));
+  if (!empty($transactions)) {
+    // Load the prior IPN's transaction and update that with the capture values.
+    $transaction = reset($transactions);
+  }
+  else {
+    // Create a new payment transaction for the order.
+    $transaction = commerce_payment_transaction_new($payment_method['method_id'], $order->order_id);
+    $transaction->instance_id = $payment_method['instance_id'];
+  }
+  $transaction->amount = commerce_currency_decimal_to_amount($notify['total_fee'], 'CNY');
+  $transaction->currency_code = 'CNY';
+
+  $transaction->remote_id = $notify["trade_no"];
+  // Set the transaction's statuses based on the IPN's payment_status.
+  $transaction->remote_status = $notify['trade_status'];
+  $transaction->data['notify'] = $notify;
+
+  // If we didn't get an approval response code...
+  switch ($notify['trade_status']) {
+    case 'TRADE_CLOSED':
+      $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
+      $transaction->message = t("The payment has failed. This happens only if the payment was made from your customer’s bank account.");
+      break;
+
+    case 'WAIT_BUYER_PAY':
+      $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+      $transaction->message = commerce_paypal_ipn_pending_reason($ipn['pending_reason']);
+      break;
+
+    case 'TRADE_FINISHED':
+    case 'TRADE_SUCCESS':
+      $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+      $transaction->message = t('The payment has completed.');
+      break;
+  }
+  commerce_payment_transaction_save($transaction);
+  commerce_payment_redirect_pane_next_page($order);
+  watchdog('commerce_alipay', 'Notify processed for Order @order_number with ID @trade_no.', array('@trade_no' => $notify["trade_no"], '@order_number' => $order->order_number), WATCHDOG_INFO);
+}
+
+/**
+ * Alipay sign.
+ */
+function commerce_alipay_sign($para = array(), $key, $sign_type = 'MD5') {
+  ksort($para);
+  reset($para);
+  foreach ($para as $k => $val) {
+    if (!in_array($k, array('sign', 'sign_type')) && !empty($val)) {
+      $para_filter[] = $k . '=' . $val;
+    }
+  }
+  $arg = implode('&', $para_filter);
+  if (get_magic_quotes_gpc()) {
+    $arg = stripslashes($arg);
+  }
+  return md5($arg . $key);
+}
+
