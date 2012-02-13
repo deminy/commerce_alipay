@@ -183,8 +183,8 @@ function commerce_alipay_redirect_form_submit($order, $payment_method) {
 }
 
 /**
-  * Alipay notify process
-  */
+ * Alipay notify process
+ */
 function commerce_alipay_process_notify() {
   if (empty($_POST)) {
     return FALSE;
@@ -197,8 +197,8 @@ function commerce_alipay_process_notify() {
 }
 
 /**
-  * Alipay notify validate
-  */
+ * Alipay notify validate
+ */
 function commerce_alipay_notify_validate($order, $payment_method, $notify) {
   if (empty($notify)) {
     return FALSE;
@@ -215,8 +215,8 @@ function commerce_alipay_notify_validate($order, $payment_method, $notify) {
 }
 
 /**
-  * Alipay notify submit
-  */
+ * Alipay notify submit
+ */
 function commerce_alipay_notify_submit($order, $payment_method, $notify) {
   // If this is a prior authorization capture IPN for which we've already
   // created a transaction...
@@ -234,20 +234,19 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
   $transaction->currency_code = 'CNY';
 
   $transaction->remote_id = $notify["trade_no"];
-  // Set the transaction's statuses based on the IPN's payment_status.
+  // Set the transaction's statuses based on the notify's trade_status.
   $transaction->remote_status = $notify['trade_status'];
   $transaction->data['notify'] = $notify;
 
-  // If we didn't get an approval response code...
   switch ($notify['trade_status']) {
     case 'TRADE_CLOSED':
       $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
-      $transaction->message = t("The payment has failed. This happens only if the payment was made from your customer’s bank account.");
+      $transaction->message = t("The payment has failed.");
       break;
 
     case 'WAIT_BUYER_PAY':
       $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-      $transaction->message = commerce_paypal_ipn_pending_reason($ipn['pending_reason']);
+      $transaction->message = t('The payment is pending.');
       break;
 
     case 'TRADE_FINISHED':
