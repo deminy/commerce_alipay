@@ -163,7 +163,7 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
  */
 function commerce_alipay_redirect($form, &$form_state) {
   $url = 'https://www.alipay.com/cooperate/gateway.do?';
-  form_state_values_clean(&$form_state);
+  form_state_values_clean($form_state);
   $data = drupal_http_build_query($form_state['values']);
   $form_state['redirect'] = $url . $data;
 }
