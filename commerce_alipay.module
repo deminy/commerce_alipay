@@ -205,6 +205,7 @@ function commerce_alipay_notify_validate($order, $payment_method, $notify) {
   }
   variable_set('commerce_alipay_notity_' . $notify["notify_id"], $notify);
   watchdog('commerce_alipay', 'Customer returned from Alipay with the following data:<pre>' . check_plain(print_r($notify, TRUE)) . '</pre>', array(), WATCHDOG_NOTICE);
+  $notify           = drupal_get_query_parameters($notify);
   $sign             = commerce_alipay_sign($notify, $payment_method['settings']['key']);
   $https_verify_url = 'https://www.alipay.com/cooperate/gateway.do?service=notify_verify&partner=' . $payment_method['settings']['partner'] . '&notify_id=';
   $result           = drupal_http_request($https_verify_url . $notify["notify_id"]);
