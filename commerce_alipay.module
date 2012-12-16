@@ -118,9 +118,9 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
   $currency_code = $wrapper->commerce_order_total->currency_code->value();
   $amount        = $payment_method['settings']['debug'] ? 1 : $wrapper->commerce_order_total->amount->value();
 
-  // Set feedback URLs
+  // Set feedback URLs.
   $settings = array(
-    // Return to the payment redirect page for processing successful payments
+    // Return to the payment redirect page for processing successful payments.
     'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
     'notify' => url('commerce_alipay/notify', array('absolute' => TRUE)),
   );
@@ -141,12 +141,12 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
     'total_fee' => commerce_currency_amount_to_decimal($amount, 'CNY'),
     'sign_type' => 'MD5',
   );
-  $data['sign'] = commerce_alipay_sign($data, $settings['key']);
+  $data['sign'] = commerce_alipay_sign($settings['key'], $data);
   $form['#token'] = FALSE;
   foreach ($data as $name => $value) {
     if (!empty($value)) {
       $value = trim($value);
-      // Add the value as a hidden form element
+      // Add the value as a hidden form element.
       $form[$name] = array('#type' => 'hidden', '#value' => $value);
     }
   }
@@ -183,7 +183,7 @@ function commerce_alipay_redirect_form_submit($order, $payment_method) {
 }
 
 /**
- * Alipay notify process
+ * Alipay notify process.
  */
 function commerce_alipay_process_notify() {
   if (empty($_POST)) {
@@ -197,7 +197,7 @@ function commerce_alipay_process_notify() {
 }
 
 /**
- * Alipay notify validate
+ * Alipay notify validate.
  */
 function commerce_alipay_notify_validate($order, $payment_method, $notify) {
   if (empty($notify)) {
@@ -206,7 +206,7 @@ function commerce_alipay_notify_validate($order, $payment_method, $notify) {
   variable_set('commerce_alipay_notity_' . $notify["notify_id"], $notify);
   watchdog('commerce_alipay', 'Customer returned from Alipay with the following data:<pre>' . check_plain(print_r($notify, TRUE)) . '</pre>', array(), WATCHDOG_NOTICE);
   $notify     = drupal_get_query_parameters($notify);
-  $sign       = commerce_alipay_sign($notify, $payment_method['settings']['key']);
+  $sign       = commerce_alipay_sign($payment_method['settings']['key'], $notify);
   $verify_url = extension_loaded('openssl') ? 'https://www.alipay.com/cooperate/gateway.do?service=notify_verify&' : 'http://notify.alipay.com/trade/notify_query.do?';
   $result     = drupal_http_request($verify_url . 'partner=' . $payment_method['settings']['partner'] . '&notify_id=' . $notify["notify_id"]);
   if ($result->data == 'true' && $sign == $notify['sign']) {
@@ -216,7 +216,7 @@ function commerce_alipay_notify_validate($order, $payment_method, $notify) {
 }
 
 /**
- * Alipay notify submit
+ * Alipay notify submit.
  */
 function commerce_alipay_notify_submit($order, $payment_method, $notify) {
   // If this is a prior authorization capture IPN for which we've already
@@ -242,54 +242,55 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
   if (isset($notify['refund_status'])) {
     switch ($notify['refund_status']) {
       case 'WAIT_SELLER_AGREE':
-  	$transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-  	$transaction->message = commerce_alipay_status_message($notify['refund_status']);
-  	commerce_order_status_update($order, 'wait_seller_agree');
-  	break;
-  			
+        $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+        $transaction->message = commerce_alipay_status_message($notify['refund_status']);
+        commerce_order_status_update($order, 'wait_seller_agree');
+        break;
+
       case 'REFUND_SUCCESS':
         $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-  	$transaction->message = commerce_alipay_status_message($notify['refund_status']);
-  	commerce_order_status_update($order, 'refund_success');
-  	break;
+        $transaction->message = commerce_alipay_status_message($notify['refund_status']);
+        commerce_order_status_update($order, 'refund_success');
+        break;
     }
-  } else {
+  } 
+  else {
     switch ($notify['trade_status']) {
       case 'TRADE_CLOSED':
-    	$transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
-    	$transaction->message = commerce_alipay_status_message($notify['trade_status']);
-    	commerce_order_status_update($order, 'canceled');
-    	break;
-		
+        $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
+        $transaction->message = commerce_alipay_status_message($notify['trade_status']);
+        commerce_order_status_update($order, 'canceled');
+        break;
+
       case 'WAIT_SELLER_SEND_GOODS':
-	$transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-	$transaction->message = commerce_alipay_status_message($notify['trade_status']);
-	commerce_order_status_update($order, 'wait_send_goods');
-	break;
-			
+        $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+        $transaction->message = commerce_alipay_status_message($notify['trade_status']);
+        commerce_order_status_update($order, 'wait_send_goods');
+        break;
+
       case 'WAIT_BUYER_CONFIRM_GOODS':
-	$transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-	$transaction->message = commerce_alipay_status_message($notify['trade_status']);
-	commerce_order_status_update($order, 'wait_buyer_confirm');
-	break;			
-			
+        $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+        $transaction->message = commerce_alipay_status_message($notify['trade_status']);
+        commerce_order_status_update($order, 'wait_buyer_confirm');
+        break;			
+
       case 'WAIT_BUYER_PAY':
-    	$transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-    	$transaction->message = commerce_alipay_status_message($notify['trade_status']);
-    	commerce_order_status_update($order, 'wait_buyer_pay');
-    	break;
+        $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+        $transaction->message = commerce_alipay_status_message($notify['trade_status']);
+        commerce_order_status_update($order, 'wait_buyer_pay');
+        break;
 
       case 'TRADE_FINISHED':
         $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    	$transaction->message = commerce_alipay_status_message($notify['trade_status']);
-    	commerce_order_status_update($order, 'completed');
-    	break;
-    	  
+        $transaction->message = commerce_alipay_status_message($notify['trade_status']);
+        commerce_order_status_update($order, 'completed');
+        break;
+
       case 'TRADE_SUCCESS':
-    	$transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    	$transaction->message = commerce_alipay_status_message($notify['trade_status']);
-    	commerce_order_status_update($order, 'completed');
-    	break;
+        $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+        $transaction->message = commerce_alipay_status_message($notify['trade_status']);
+        commerce_order_status_update($order, 'completed');
+        break;
     }
   }
 
@@ -301,7 +302,7 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
 /**
  * Alipay sign.
  */
-function commerce_alipay_sign($para = array(), $key, $sign_type = 'MD5') {
+function commerce_alipay_sign($key, $para = array(), $sign_type = 'MD5') {
   ksort($para);
   reset($para);
   foreach ($para as $k => $val) {
@@ -341,7 +342,7 @@ function commerce_alipay_status_message($status) {
 }
 
 /**
- * hook_commerce_order_status_info().
+ * Implements hook_commerce_order_status_info().
  */
 function commerce_alipay_commerce_order_status_info() {
   $order_statuses = array();
@@ -351,30 +352,30 @@ function commerce_alipay_commerce_order_status_info() {
     'title' => t('Wait for seller to send goods'),
     'state' => 'pending',
   );
-  
+
   $order_statuses['wait_buyer_pay'] = array(
     'name' => 'wait_buyer_pay',
     'title' => t('Wait for buyer to pay'),
     'state' => 'pending',
   );
-  
+
   $order_statuses['wait_buyer_confirm'] = array(
     'name' => 'wait_buyer_confirm',
     'title' => t('Wait for buyer to confirm'),
     'state' => 'pending',
   );
-	
+
   $order_statuses['wait_seller_agree'] = array(
     'name' => 'wait_seller_agree',
     'title' => t('Wait for seller to agree refund request.'),
     'state' => 'pending',
   );
-  
+
   $order_statuses['refund_success'] = array(
     'name' => 'refund_success',
     'title' => t('Refund success. (Transaction canceled)'),
     'state' => 'canceled',
   );
-  
+
   return $order_statuses;
 }
