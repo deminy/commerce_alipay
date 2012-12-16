@@ -253,7 +253,7 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
         commerce_order_status_update($order, 'refund_success');
         break;
     }
-  } 
+  }
   else {
     switch ($notify['trade_status']) {
       case 'TRADE_CLOSED':
@@ -272,7 +272,7 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
         $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
         $transaction->message = commerce_alipay_status_message($notify['trade_status']);
         commerce_order_status_update($order, 'wait_buyer_confirm');
-        break;			
+        break;
 
       case 'WAIT_BUYER_PAY':
         $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
