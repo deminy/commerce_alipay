@@ -162,7 +162,7 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
  * Redirect to alipay.
  */
 function commerce_alipay_redirect($form, &$form_state) {
-  $url = 'https://www.alipay.com/cooperate/gateway.do?';
+  $url = 'https://mapi.alipay.com/gateway.do?';
   form_state_values_clean($form_state);
   $data = drupal_http_build_query($form_state['values']);
   $form_state['redirect'] = $url . $data;
@@ -207,7 +207,7 @@ function commerce_alipay_notify_validate($order, $payment_method, $notify) {
   watchdog('commerce_alipay', 'Customer returned from Alipay with the following data:<pre>' . check_plain(print_r($notify, TRUE)) . '</pre>', array(), WATCHDOG_NOTICE);
   $notify     = drupal_get_query_parameters($notify);
   $sign       = commerce_alipay_sign($payment_method['settings']['key'], $notify);
-  $verify_url = extension_loaded('openssl') ? 'https://www.alipay.com/cooperate/gateway.do?service=notify_verify&' : 'http://notify.alipay.com/trade/notify_query.do?';
+  $verify_url = extension_loaded('openssl') ? 'https://mapi.alipay.com/gateway.do?service=notify_verify&' : 'http://notify.alipay.com/trade/notify_query.do?';
   $result     = drupal_http_request($verify_url . 'partner=' . $payment_method['settings']['partner'] . '&notify_id=' . $notify["notify_id"]);
   if ($result->data == 'true' && $sign == $notify['sign']) {
     return TRUE;
