@@ -325,18 +325,25 @@ function commerce_alipay_status_message($status) {
   switch ($status) {
     case 'WAIT_SELLER_AGREE':
       return t('The refund request is waiting for seller to agree.');
+
     case 'REFUND_SUCCESS':
       return t('Seller agree on the refund request.');
+
     case 'TRADE_CLOSED':
       return t('The payment has failed. This happens only if the payment was made from your customer’s bank account.');
+
     case 'WAIT_SELLER_SEND_GOODS':
       return t('The payment is waiting seller to send goods.');
+
     case 'WAIT_BUYER_CONFIRM_GOODS':
       return t('seller has already sent the goods, wait buyer to confirm.');
+
     case 'WAIT_BUYER_PAY':
       return t('The payment is waiting buyer to pay.');
+
     case 'TRADE_FINISHED':
       return t('The payment has completed.');
+
     case 'TRADE_SUCCESS':
       return t('The payment has completed.');
   }

@@ -6,30 +6,29 @@
  */
 
 /**
- * Allows modules to alter defined Alipay API parameters to provide support for
- * different payment services or specific properties.
+ * Allows modules to alter defined Alipay API transaction parameters.
  *
  * The Commerce Alipay module defines by default the necessary properties to
  * provide support for the "Direct Pay" Alipay service type.
  * However, Alipay provides other types of services which may require different
- * properties and parameters to be passed when redirecting for payment..
+ * properties and parameters to be passed when redirecting users for payment.
  * This hook allows other modules to alter these parameters to support other
- * service types, such as "DualFun", by providing additional keyed
- * properties as requested by the Alipay API.
+ * service types, such as "DualFun", by providing additional keyed properties
+ * as requested by the Alipay API.
  *
  * A few examples of the possible parameters that could be used along with this
  * hook are described in the implementation example below.
  * For more complete information on the Alipay API, please see:
  * http://club.alipay.com/read-htm-tid-9976972.html
  *
- * @param $data
+ * @param array $data
  *   An array of keyed properties to be passed to Alipay's payment gateway, in
  *   compliance with its API. Some of the possible keyed properties have been
  *   described in the implementation example below. To disable extensions or
  *   any key of the array, unset it or assign the parameter to null.
- * @param $settings
+ * @param array $settings
  *   An array of the current settings configured for the payment method.
- * @param $order
+ * @param stdClass $order
  *   If available, the order object for which the payment should be processed.
  *
  * @see commerce_alipay_redirect_form()
@@ -40,7 +39,7 @@ function hook_commerce_alipay_parameter_alter(&$data, $settings, $order) {
 
     // Payment service: Direct Pay (Instant Payment Interface).
     case 'create_direct_pay_by_user':
-      $data = array (
+      $data = array(
         // The PartnerID is a string/key provided by Alipay to use its API.
         'partner' => 'ExamplePartnerID',
         // Payment type is required.
@@ -91,7 +90,7 @@ function hook_commerce_alipay_parameter_alter(&$data, $settings, $order) {
 
     // Payment service: Escrow Pay (Secured Transactions Interface).
     case 'create_partner_trade_by_buyer':
-    // Payment service: DualFun (Instant Payment and Secured Transactions).
+      // Payment service: DualFun (Instant Payment and Secured Transactions).
     case 'trade_create_by_buyer':
       // The PartnerID is a string/key provided by Alipay to use its API.
       $data['partner'] = 'ExamplePartnerID';
@@ -161,7 +160,6 @@ function hook_commerce_alipay_parameter_alter(&$data, $settings, $order) {
 
     // Payment service: SendConfirm (Delivery confirmed Interface).
     case 'send_goods_confirm_by_platform':
-
       // Alipay trade number, required.
       $data['trade_no'] = '1357884681';
 
@@ -202,8 +200,11 @@ function hook_commerce_alipay_parameter_alter(&$data, $settings, $order) {
  * Note: PHP5+ is required. Make sure that the server and local host support
  * DOMDocument and SSL.
  *
- * @param array $data
- * @return int Timestamp
+ * @param string $encode
+ *   Optionally specify a specific character encoding. UTF-8 by default.
+ *
+ * @return int
+ *   Encrypted key.
  *
  * @see hook_commerce_alipay_parameter_alter()
  */
@@ -212,7 +213,7 @@ function query_timestamp($encode = 'utf-8') {
   $encrypt_key = '';
   $doc = new DOMDocument();
   $doc->load($url);
-  $itemEncrypt_key = $doc->getElementsByTagName('encrypt_key');
-  $encrypt_key = $itemEncrypt_key->item(0)->nodeValue;
+  $item_encrypt_key = $doc->getElementsByTagName('encrypt_key');
+  $encrypt_key = $item_encrypt_key->item(0)->nodeValue;
   return $encrypt_key;
 }
