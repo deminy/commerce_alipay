@@ -305,7 +305,8 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
 function commerce_alipay_data_body($order) {
   if (empty($order)) {
     return '';
-  } else {
+  }
+  else {
     $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
     $line_items = $order_wrapper->commerce_line_items->value();
     foreach ($line_items as $line_item) {
@@ -314,7 +315,7 @@ function commerce_alipay_data_body($order) {
         $body[] = $line_item_wrapper->commerce_product->title->value();
       }
     }
-    return implode($body,' | ');
+    return implode($body, ' | ');
   }
 }
 /**
