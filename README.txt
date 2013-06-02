@@ -28,7 +28,7 @@ correctly setup and ensuring payments could effectively be received.
 
 Useful Resources
 ----------------
-For any questions and problems, you may find some help on the Alipay official site:
+For any questions, some help could be found on the Alipay official site:
 1 - Merchant Help Center:
 https://b.alipay.com/support/helperApply.htm?action=consultationApply
 Apply for integration consultation, and you could expect a professional
