@@ -142,7 +142,7 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
     'sign_type' => 'MD5',
   );
   $data['sign'] = commerce_alipay_sign($settings['key'], $data);
-  drupal_alter('commerce_alipay_parameter', &$data, $settings, $order);
+  drupal_alter('commerce_alipay_parameter', $data, $settings, $order);
   $form['#token'] = FALSE;
   foreach ($data as $name => $value) {
     if (!empty($value)) {
