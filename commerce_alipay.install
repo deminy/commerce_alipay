@@ -6,15 +6,6 @@
  */
 
 /**
- * Implements hook_uninstall().
- */
-function commerce_alipay_uninstall() {
-  // Remove any overriden Rules configuration that could be in the database.
-  $rule = rules_config_load('commerce_payment_alipay');
-  if (!empty($rule)) $rule->delete();
-}
-
-/**
  * Remove useless variables commerce_alipay_notity_[NOTIFY_ID] from database.
  */
 function commerce_alipay_update_7100() {
