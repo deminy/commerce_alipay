@@ -405,8 +405,11 @@ function commerce_alipay_commerce_order_status_info() {
 
   return $order_statuses;
 }
+
 /**
  * Implements hook_form_FORM_ID_alter().
+ *
+ * Modify the payment method selection pane on Checkout to add Alipay icons.
  */
 function commerce_alipay_form_commerce_checkout_form_alter(&$form, &$form_state) {
   // If this checkout form contains the payment method radios...
@@ -418,20 +421,31 @@ function commerce_alipay_form_commerce_checkout_form_alter(&$form, &$form_state)
       // If we find Alipay...
       if ($method_id == 'alipay') {
         // Prepare the replacement radio button text with icons.
-        $alipay_icon_path = drupal_get_path('module', 'commerce_alipay') . '/images/alipay.gif';
-        $alipay_icon = theme('image',array(
-          'path' => $alipay_icon_path,
-          'attributes' => array('class' => 'alipay-icon'),
-        ));
-        $directpay_icon_path = drupal_get_path('module', 'commerce_alipay') . '/images/directpay.gif';
-        $directpay_icon = theme('image',array(
-          'path' => $directpay_icon_path,
-          'attributes' => array('class' => 'alipay-icon'),
-        ));
-        $value = $alipay_icon . '<span class="alipay-label">' . t('Alipay') . '</span>';
-        $value .= '<div class="commerce-directpay-icons">' . $directpay_icon . '<span class="label">' . t('Direct Pay') . '</span></div>';
+        $icons_path = drupal_get_path('module', 'commerce_alipay') . '/images/';
 
-        // Add the CSS.
+        // Generate Alipay logo image markup.
+        $alipay_label =  t('Alipay');
+        $alipay_icon = theme('image',array(
+          'path' => $icons_path . 'alipay.gif',
+          'title' => $alipay_label,
+          'alt' =>  $alipay_label,
+          'attributes' => array('class' => 'commerce-alipay-icon'),
+        ));
+
+        // Generate Instant Payment logo image markup.
+        $directpay_label =  t('Instant Payment');
+        $directpay_icon = theme('image',array(
+          'path' => $icons_path . 'directpay.gif',
+          'title' =>  $alipay_label . ' - ' . $directpay_label,
+          'alt' => $alipay_label . ' - ' . $directpay_label,
+          'attributes' => array('class' => 'commerce-alipay-icon'),
+        ));
+
+        // Generate the aggregated markup.
+        $value = $alipay_icon . '<span class="commerce-alipay-label">' . $alipay_label . '</span>';
+        $value .= '<div class="commerce-alipay-directpay">' . $directpay_icon . '<span class="commerce-alipay-label">' . $directpay_label . '</span></div>';
+
+        // Add module's CSS for the custom labels styles.
         $form['commerce_payment']['payment_method']['#attached']['css'][] = drupal_get_path('module', 'commerce_alipay') . '/theme/commerce_alipay.theme.css';
 
         break;
