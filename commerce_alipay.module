@@ -405,3 +405,37 @@ function commerce_alipay_commerce_order_status_info() {
 
   return $order_statuses;
 }
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function commerce_alipay_form_commerce_checkout_form_alter(&$form, &$form_state) {
+  // If this checkout form contains the payment method radios...
+  if (!empty($form['commerce_payment']['payment_method']['#options'])) {
+    // Loop over its options array looking for a Alipay option.
+    foreach ($form['commerce_payment']['payment_method']['#options'] as $key => &$value) {
+      list($method_id, $rule_name) = explode('|', $key);
+
+      // If we find Alipay...
+      if ($method_id == 'alipay') {
+        // Prepare the replacement radio button text with icons.
+        $alipay_icon_path = drupal_get_path('module', 'commerce_alipay') . '/images/alipay.gif';
+        $alipay_icon = theme('image',array(
+          'path' => $alipay_icon_path,
+          'attributes' => array('class' => 'alipay-icon'),
+        ));
+        $directpay_icon_path = drupal_get_path('module', 'commerce_alipay') . '/images/directpay.gif';
+        $directpay_icon = theme('image',array(
+          'path' => $directpay_icon_path,
+          'attributes' => array('class' => 'alipay-icon'),
+        ));
+        $value = $alipay_icon . '<span class="alipay-label">' . t('Alipay') . '</span>';
+        $value .= '<div class="commerce-directpay-icons">' . $directpay_icon . '<span class="label">' . t('Direct Pay') . '</span></div>';
+
+        // Add the CSS.
+        $form['commerce_payment']['payment_method']['#attached']['css'][] = drupal_get_path('module', 'commerce_alipay') . '/theme/commerce_alipay.theme.css';
+
+        break;
+      }
+    }
+  }
+}

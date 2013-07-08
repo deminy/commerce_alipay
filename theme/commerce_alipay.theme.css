@@ -1,0 +1,11 @@
+.commerce-directpay-icons {
+  margin-left:23px;
+  vertical-align:middle;
+}
+.alipay-icon {
+  position:relative;
+  top:5px;
+}
+.commerce-directpay-icons .label, .alipay-label{
+  margin-left:8px;
+}
