@@ -317,14 +317,20 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
       case 'TRADE_FINISHED':
         $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
         $transaction->message = commerce_alipay_status_message($notify['trade_status']);
-        commerce_order_status_update($order, 'completed');
+        // No need to change order status when Instant Payment is successful.
+        if ($notify['exterface']!= "create_direct_pay_by_user") {
+          commerce_order_status_update($order, 'completed');
+        }
         break;
 
       // Transaction successful.
       case 'TRADE_SUCCESS':
         $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
         $transaction->message = commerce_alipay_status_message($notify['trade_status']);
-        commerce_order_status_update($order, 'completed');
+        // No need to change order status when Instant Payment is successful.
+        if ($notify['exterface']!= "create_direct_pay_by_user") {
+          commerce_order_status_update($order, 'completed');
+        }
         break;
     }
   }
