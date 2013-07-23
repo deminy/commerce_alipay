@@ -154,10 +154,10 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
     'total_fee' => commerce_currency_amount_to_decimal($amount, 'CNY'),
     'sign_type' => 'MD5',
   );
-  // Encrypted transaction signature.
-  $data['sign'] = commerce_alipay_sign($settings['key'], $data);
   // Provide a method for other modules to alter Alipay's API transaction data.
   drupal_alter('commerce_alipay_parameter', $data, $settings, $order);
+  // Encrypted transaction signature.
+  $data['sign'] = commerce_alipay_sign($settings['key'], $data);
   $form['#token'] = FALSE;
   foreach ($data as $name => $value) {
     if (!empty($value)) {
