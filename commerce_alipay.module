@@ -223,7 +223,7 @@ function commerce_alipay_notify_validate($order, $payment_method, $notify) {
     return FALSE;
   }
   // Log an entry of the notification received for a transaction.
-  watchdog('commerce_alipay', 'Customer returned from Alipay with the following data:<pre>' . check_plain(print_r($notify, TRUE)) . '</pre>', array(), WATCHDOG_NOTICE);
+  watchdog('commerce_alipay', 'Customer returned from Alipay with the following data:<pre>@notify</pre>', array('@notify' => print_r($notify, TRUE)));
   $notify = drupal_get_query_parameters($notify);
   // Encrypted transaction signature.
   $sign = commerce_alipay_sign($payment_method['settings']['key'], $notify);
