@@ -158,7 +158,6 @@ function commerce_alipay_redirect_form($form, &$form_state, $order, $payment_met
   drupal_alter('commerce_alipay_parameter', $data, $settings, $order);
   // Encrypted transaction signature.
   $data['sign'] = commerce_alipay_sign($settings['key'], $data);
-  $form['#token'] = FALSE;
   foreach ($data as $name => $value) {
     if (!empty($value)) {
       $value = trim($value);
