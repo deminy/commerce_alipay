@@ -338,6 +338,8 @@ function commerce_alipay_notify_submit($order, $payment_method, $notify) {
   commerce_payment_redirect_pane_next_page($order);
   // Record an entry of the transaction with the order and trade numbers.
   watchdog('commerce_alipay', 'Notify processed for Order @order_number with ID @trade_no.', array('@trade_no' => $notify["trade_no"], '@order_number' => $order->order_number), WATCHDOG_INFO);
+
+  echo "success";
 }
 
 /**
